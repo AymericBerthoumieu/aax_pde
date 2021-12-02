@@ -37,4 +37,6 @@
 *.layout
 
 #visual studio
-./out
+/out
+CMakelist.txt
+
