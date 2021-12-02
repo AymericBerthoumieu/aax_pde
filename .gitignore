@@ -33,3 +33,9 @@
 
 # codeBlocks
 *.cbp
+*.depend
+*.layout
+
+#visual studio
+/out
+CMakelist.txt
