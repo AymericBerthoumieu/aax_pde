@@ -14,10 +14,9 @@ namespace mesh
 
     std::vector<double> Mesh::initiate_spot_values(double S0, double sigma, double maturity, int nb_steps)
     {
-//        double spot_max = log(S0) + 5 * sigma * sqrt(maturity);
-//        double spot_min = log(S0) - 5 * sigma * sqrt(maturity);
-        double spot_max = S0 + 20.;
-        double spot_min = S0 - 20.;
+    double spot_max = log(S0) + 5 * sigma * sqrt(maturity);
+    double spot_min = log(S0) - 5 * sigma * sqrt(maturity);
+
         m_dx = (spot_max - spot_min) / nb_steps;
 
         std::vector<double> res(nb_steps);
@@ -30,25 +29,39 @@ namespace mesh
 
     void Mesh::run()
     {
-        std::vector<double> spot_axis = initiate_spot_values(m_S0, m_sigma, m_maturity, m_nb_steps_space);
+        std::vector<double> log_spot_axis = initiate_spot_values(m_S0, m_sigma, m_maturity, m_nb_steps_space);
+        std::vector<double> spot_axis;
+        spot_axis.reserve(log_spot_axis.size());
+        for(size_t i = 0; i < log_spot_axis.size(); ++i)
+        {
+            spot_axis.push_back(std::exp(log_spot_axis[i]));
+        }
+
+        // std::cout << "Spot vector: " << std::endl;
+
+        // payoff::print_vector(spot_axis);
+
         std::vector<double> Xt1 = m_pf->compute_payoff(spot_axis);
 
         m_dt = m_maturity / m_nb_steps_time;
 
+        grid_res.push_back(Xt1); //à rajouter comme la première colonne doit etre le payoff?
+
         for (int i=0; i<m_nb_steps_time; ++i)
         {
-            std::cout << "     loop number " << i << std::endl;
+            std::cout << "Loop number: " << i << std::endl;
             double time = 0.0; // value test TODO: harmonize with the potential value needed in BoundaryCondition
             system_matrix::MatrixSystem matrix_system(m_alpha, m_beta, m_gamma, m_delta, m_theta, m_dt, m_dx, m_sigma, m_r, time, m_bound_small,
                                                       m_bound_big, Xt1, spot_axis[0], spot_axis[spot_axis.size() - 1]);
-            payoff::print_vector(Xt1);
+
+            // std::cout << "Column X" << i << ": " <<  std::endl;
+            // payoff::print_vector(Xt1);
+
             Xt1 = matrix_system.solve();
             grid_res.push_back(Xt1);
 
-
-
-
         }
+
     }
 
     double Mesh::get_price()
