@@ -10,7 +10,14 @@ namespace mesh
              coef_eq::CoefEquation*& alpha, coef_eq::CoefEquation*& beta, coef_eq::CoefEquation*& gamma, coef_eq::CoefEquation*& delta)
              : m_S0(S0), m_sigma(sigma), m_maturity(maturity), m_nb_steps_space(nb_steps_space), m_nb_steps_time(nb_steps_time), m_theta(theta), m_r(r),
              m_pf(pf), m_bound_small(bound_small), m_bound_big(bound_big), m_alpha(alpha), m_beta(beta), m_gamma(gamma), m_delta(delta)
-             {}
+    {
+//      #of col = time, of rows = space
+//        grid_res.resize(m_nb_steps_space, std::vector<double>(m_nb_steps_time));
+//        grid_res_bumped_sigma.resize(m_nb_steps_space, std::vector<double>(m_nb_steps_time));
+
+    }
+
+
 
     std::vector<double> Mesh::initiate_spot_values(double S0, double sigma, double maturity, int nb_steps)
     {
@@ -45,7 +52,8 @@ namespace mesh
 
         m_dt = m_maturity / m_nb_steps_time;
 
-        grid_res.push_back(Xt1); //à rajouter comme la première colonne doit etre le payoff?
+
+        grid_res.push_back(Xt1); //à rajouter, car la première colonne doit etre le payoff
 
         for (int i=0; i<m_nb_steps_time; ++i)
         {
@@ -59,9 +67,16 @@ namespace mesh
 
             Xt1 = matrix_system.solve();
             grid_res.push_back(Xt1);
-
         }
 
+
+    }
+
+    std::vector<std::vector<double>> Mesh::get_mesh()
+    {
+//        Eigen::VectorXd grid_matrix = Eigen::Map<Eigen::VectorXd, Eigen::Unaligned>(grid_res.data(), grid_res.size());
+//        Eigen::Map<MatrixXf> grid_matrix(grid_res,2,2);
+//        return grid_matrix;
     }
 
     double Mesh::get_price()
