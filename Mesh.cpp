@@ -11,18 +11,17 @@ namespace mesh
              : m_S0(S0), m_sigma(sigma), m_maturity(maturity), m_nb_steps_space(nb_steps_space), m_nb_steps_time(nb_steps_time), m_theta(theta), m_r(r),
              m_pf(pf), m_bound_small(bound_small), m_bound_big(bound_big), m_alpha(alpha), m_beta(beta), m_gamma(gamma), m_delta(delta)
     {
+
 //      #of col = time, of rows = space
-//        grid_res.resize(m_nb_steps_space, std::vector<double>(m_nb_steps_time));
-//        grid_res_bumped_sigma.resize(m_nb_steps_space, std::vector<double>(m_nb_steps_time));
+        grid_res.resize(m_nb_steps_space, std::vector<double>(m_nb_steps_time));
+        grid_res_bumped_sigma.resize(m_nb_steps_space, std::vector<double>(m_nb_steps_time));
 
     }
 
-
-
     std::vector<double> Mesh::initiate_spot_values(double S0, double sigma, double maturity, int nb_steps)
     {
-    double spot_max = log(S0) + 5 * sigma * sqrt(maturity);
-    double spot_min = log(S0) - 5 * sigma * sqrt(maturity);
+        double spot_max = log(S0) + 5 * sigma * sqrt(maturity);
+        double spot_min = log(S0) - 5 * sigma * sqrt(maturity);
 
         m_dx = (spot_max - spot_min) / nb_steps;
 
@@ -32,6 +31,19 @@ namespace mesh
             res[i] = spot_max - i * m_dx;
         }
         return res;
+    }
+
+    void Mesh::run(bool bumped)
+    {
+        if (bumped)
+        {
+            grid_res_bumped_sigma = main_run();
+
+        }
+        else
+        {
+            grid_res = main_run();
+        }
     }
 
     std::vector<std::vector<double>> Mesh::main_run()
@@ -44,17 +56,13 @@ namespace mesh
             spot_axis.push_back(std::exp(log_spot_axis[i]));
         }
 
-        // std::cout << "Spot vector: " << std::endl;
-
-        // payoff::print_vector(spot_axis);
-
         std::vector<double> Xt1 = m_pf->compute_payoff(spot_axis);
 
         m_dt = m_maturity / m_nb_steps_time;
 
 
-        grid_res.push_back(Xt1); //à rajouter, car la première colonne doit etre le payoff
-
+        std::vector<std::vector<double>> grid;
+        grid.push_back(Xt1); //à rajouter comme la première colonne doit etre le payoff? inutile
         for (int i=0; i<m_nb_steps_time; ++i)
         {
             std::cout << "Loop number: " << i << std::endl;
@@ -62,21 +70,20 @@ namespace mesh
             system_matrix::MatrixSystem matrix_system(m_alpha, m_beta, m_gamma, m_delta, m_theta, m_dt, m_dx, m_sigma, m_r, time, m_bound_small,
                                                       m_bound_big, Xt1, spot_axis[0], spot_axis[spot_axis.size() - 1]);
 
-            // std::cout << "Column X" << i << ": " <<  std::endl;
-            // payoff::print_vector(Xt1);
-
             Xt1 = matrix_system.solve();
-            grid_res.push_back(Xt1);
+            grid.push_back(Xt1);
+
         }
 
 
-    }
+        std::cout << "\n -------------GRID------------ \n" << std:: endl;
+        for (int i = 0; i < grid.size(); i++) //eventuellement à modifier pour l'appeler dans le main
 
-    std::vector<std::vector<double>> Mesh::get_mesh()
-    {
-//        Eigen::VectorXd grid_matrix = Eigen::Map<Eigen::VectorXd, Eigen::Unaligned>(grid_res.data(), grid_res.size());
-//        Eigen::Map<MatrixXf> grid_matrix(grid_res,2,2);
-//        return grid_matrix;
+        {
+            payoff::print_vector(grid[i]);
+        }
+
+        return grid;
     }
 
     double Mesh::get_price(bool bumped)
@@ -89,6 +96,20 @@ namespace mesh
         {
             return get_price(grid_res);
         }
+    }
+
+
+    std::vector<std::vector<double>> Mesh::get_mesh() //eventuellement à modifier pour l'appeler dans le main
+    {
+//        Eigen::VectorXd grid_matrix = Eigen::Map<Eigen::VectorXd, Eigen::Unaligned>(grid_res.data(), grid_res.size());
+//        Eigen::Map<MatrixXf> grid_matrix(grid_res,2,2);
+//        return grid_matrix;
+
+//        for (int i = 0; i < grid.size(); i++)
+//    {
+//
+//            payoff::print_vector(grid[i])
+//    }
     }
 
     double Mesh::get_price(std::vector<std::vector<double>> grid)
@@ -175,5 +196,3 @@ namespace mesh
 
     }
 }
-
-
